@@ -1,0 +1,12 @@
+.git/
+.github/
+__pycache__/
+*.py[cod]
+
+# Do not bake environment-specific or sensitive runtime config into the image.
+config/healthcheck.json
+config/*.local.json
+config/*.prod.json
+
+*.out
+*.log

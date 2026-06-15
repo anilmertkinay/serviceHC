@@ -1,0 +1,84 @@
+{
+  "command_timeout_seconds": 15,
+  "systemd_user_services": [
+    {
+      "label": "Kafka broker",
+      "name": "kafka.service"
+    },
+    {
+      "label": "Kafka Connect",
+      "name": "kafka-connect.service"
+    },
+    {
+      "label": "Orders consumer",
+      "name": "orders-consumer.service",
+      "process_pattern": "orders-consumer.jar"
+    }
+  ],
+  "processes": [
+    {
+      "label": "Flink JobManager",
+      "pattern": "org.apache.flink.runtime.entrypoint.StandaloneSessionClusterEntrypoint",
+      "min_count": 1
+    },
+    {
+      "label": "Flink TaskManager",
+      "pattern": "org.apache.flink.runtime.taskexecutor.TaskManagerRunner",
+      "min_count": 1
+    }
+  ],
+  "kafka": {
+    "bootstrap_servers": "localhost:9092",
+    "cli_dir": "/opt/kafka/bin",
+    "command_config": "",
+    "min_broker_count": 1,
+    "required_topics": [
+      "orders",
+      "payments"
+    ]
+  },
+  "kafka_connect": {
+    "url": "http://localhost:8083",
+    "min_connector_count": 1,
+    "required_connectors": [
+      "orders-sink"
+    ],
+    "require_all_connectors_running": true,
+    "allowed_states": [
+      "RUNNING"
+    ]
+  },
+  "kafka_consumers": [
+    {
+      "label": "Orders consumer",
+      "systemd_service": "orders-consumer.service",
+      "process_pattern": "orders-consumer.jar",
+      "consumer_group": "orders-consumer",
+      "max_total_lag": 1000,
+      "max_partition_lag": 500,
+      "require_active_members": true
+    }
+  ],
+  "flink": {
+    "rest_url": "http://localhost:8081",
+    "min_taskmanagers": 1,
+    "min_slots_total": 1,
+    "fail_if_no_running_jobs": true,
+    "expected_jobs": [
+      {
+        "label": "Orders enrichment",
+        "name": "orders-enrichment",
+        "allowed_states": [
+          "RUNNING"
+        ]
+      },
+      {
+        "label": "Payments streaming job",
+        "name_regex": "^payments-.*",
+        "allowed_states": [
+          "RUNNING"
+        ]
+      }
+    ]
+  }
+}
