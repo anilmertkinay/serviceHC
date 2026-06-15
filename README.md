@@ -135,9 +135,12 @@ For checks that only use network endpoints, such as Kafka Connect REST and Flink
 docker run --rm \
   --pid=host \
   --user "$(id -u):$(id -g)" \
+  -e KAFKA_OPTS \
+  -e KRB5_CONFIG=/etc/krb5.conf \
   -e XDG_RUNTIME_DIR="/run/user/$(id -u)" \
   -v "/run/user/$(id -u):/run/user/$(id -u)" \
   -v "$PWD/config/healthcheck.json:/etc/servicehc/healthcheck.json:ro" \
+  -v "/etc/krb5.conf:/etc/krb5.conf:ro" \
   -v "/opt/kafka:/opt/kafka:ro" \
   ghcr.io/OWNER/REPOSITORY:latest \
   --config /etc/servicehc/healthcheck.json
@@ -145,7 +148,7 @@ docker run --rm \
 
 Replace `ghcr.io/OWNER/REPOSITORY:latest` with the package name published by GitHub Actions. Keep `kafka.cli_dir` in the config aligned with the mounted Kafka path, for example `/opt/kafka/bin`.
 
-If `kafka.command_config` points to a client properties file, truststore, or keystore on the host, mount those files into the container too and keep the same paths in `healthcheck.json`.
+If `kafka.command_config` points to a client properties file, truststore, keystore, JAAS file, or keytab on the host, mount those files into the container too and keep the same paths in `healthcheck.json`. The `-e KAFKA_OPTS` example passes the host's exported JAAS setting into the container when it is already present in your shell.
 
 The workflow publishes to GitHub Container Registry (`ghcr.io`) on pushes to `main`, `master`, and `v*` tags. Pull requests build the image but do not push it. The workflow uses the repository `GITHUB_TOKEN`, so no separate registry secret is needed for publishing to the same repository package.
 

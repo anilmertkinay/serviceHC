@@ -18,7 +18,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY scripts/ ./scripts/
-COPY config/healthcheck.sample.json ./config/healthcheck.sample.json
+COPY config/ ./config/
 COPY README.md ./
 
 RUN chmod +x ./scripts/healthcheck.py ./scripts/run-healthcheck.sh

@@ -27,8 +27,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Validate health-check sources
+        run: |
+          python3 -m py_compile scripts/healthcheck.py
+          python3 -m json.tool config/healthcheck.sample.json > /dev/null
+          python3 -m json.tool config/healthcheck.kafka.template.json > /dev/null
+
       - name: Prepare image name
         id: image
+        shell: bash
         run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -56,6 +63,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and optionally push image
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
