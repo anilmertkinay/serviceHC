@@ -44,6 +44,38 @@ Kafka checks use Kafka CLI tools from `kafka.cli_dir` or `PATH`. For SASL/TLS cl
 
 Flink checks use the Flink REST endpoint, usually `http://localhost:8081`. Continuous streaming jobs should normally be listed under `flink.expected_jobs` with `allowed_states: ["RUNNING"]`.
 
+## Hostname Templates
+
+Every string in the JSON config supports environment-style placeholders. This is useful when the same config should run on many Kafka brokers without hard-coding every hostname.
+
+Built-in placeholders:
+
+- `${HOST}`: value of `$HOST` if set, otherwise the detected hostname.
+- `${HOSTNAME}`: value of `$HOSTNAME` if set, otherwise the detected hostname.
+- `${SHORT_HOST}`: hostname before the first dot.
+- `${FQDN}`: detected fully qualified domain name.
+
+Example Kafka-only config:
+
+```json
+{
+  "kafka": {
+    "bootstrap_servers": "${FQDN}:9092",
+    "cli_dir": "/apps/kafka/bin",
+    "command_config": "/apps/kafka/config/client.properties",
+    "required_topics": ["__consumer_offsets"]
+  }
+}
+```
+
+Print the expanded config before running checks:
+
+```bash
+python3 scripts/healthcheck.py --config config/healthcheck.kafka.template.json --print-config
+```
+
+For Kerberos-enabled Kafka, prefer `${FQDN}` when the broker principal or advertised listener expects a fully qualified hostname. If your environment already exports a correct value, `${HOST}` and `${HOSTNAME}` are also available.
+
 ## Section Filtering
 
 Run only one or more sections when troubleshooting:

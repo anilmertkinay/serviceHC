@@ -1,0 +1,35 @@
+{
+  "command_timeout_seconds": 20,
+  "systemd_user_services": [
+    {
+      "label": "Kafka broker",
+      "name": "kafka.service"
+    },
+    {
+      "label": "Kafka Connect",
+      "name": "kafka-connect.service"
+    }
+  ],
+  "kafka": {
+    "bootstrap_servers": "${FQDN}:9092",
+    "cli_dir": "/apps/kafka/bin",
+    "command_config": "/apps/kafka/config/client.properties",
+    "min_broker_count": 1,
+    "required_topics": [
+      "__consumer_offsets"
+    ]
+  },
+  "kafka_connect": {
+    "url": "http://${HOSTNAME}:8083",
+    "min_connector_count": 0,
+    "required_connectors": [],
+    "require_all_connectors_running": true,
+    "allowed_states": [
+      "RUNNING"
+    ]
+  },
+  "kafka_consumers": [],
+  "flink": {
+    "enabled": false
+  }
+}

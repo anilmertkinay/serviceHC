@@ -33,8 +33,7 @@
     "command_config": "",
     "min_broker_count": 1,
     "required_topics": [
-      "orders",
-      "payments"
+      "__consumer_offsets"
     ]
   },
   "kafka_connect": {

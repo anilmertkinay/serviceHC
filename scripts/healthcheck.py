@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -46,9 +47,41 @@ def result(category: str, name: str, status: str, detail: str, elapsed_ms: int =
     return CheckResult(category=category, name=name, status=status, detail=detail, elapsed_ms=elapsed_ms)
 
 
+def template_variables() -> Dict[str, str]:
+    variables = dict(os.environ)
+    detected_hostname = socket.gethostname()
+    detected_fqdn = socket.getfqdn(detected_hostname)
+
+    variables.setdefault("HOSTNAME", detected_hostname)
+    variables.setdefault("FQDN", detected_fqdn)
+    variables.setdefault("SHORT_HOST", variables["HOSTNAME"].split(".")[0])
+    variables.setdefault("HOST", variables["HOSTNAME"])
+    return variables
+
+
+def expand_template_string(value: str, variables: Dict[str, str]) -> str:
+    pattern = re.compile(r"\$(\w+)|\$\{([^}]+)\}")
+
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1) or match.group(2)
+        return variables.get(name, match.group(0))
+
+    return pattern.sub(replace, value)
+
+
+def expand_config(value: Any, variables: Dict[str, str]) -> Any:
+    if isinstance(value, dict):
+        return {key: expand_config(item, variables) for key, item in value.items()}
+    if isinstance(value, list):
+        return [expand_config(item, variables) for item in value]
+    if isinstance(value, str):
+        return expand_template_string(value, variables)
+    return value
+
+
 def load_config(path: str) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as fh:
-        return json.load(fh)
+        return expand_config(json.load(fh), template_variables())
 
 
 def as_list(value: Any) -> List[Any]:
@@ -555,6 +588,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--config", default="config/healthcheck.json", help="Path to the JSON config file.")
     parser.add_argument("--only", action="append", help="Comma-separated sections to run: systemd,process,kafka,kafka_connect,consumer,flink.")
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
+    parser.add_argument("--print-config", action="store_true", help="Print the expanded config and exit without running checks.")
     parser.add_argument("--warn-as-fail", action="store_true", help="Return non-zero when a check returns WARN.")
     args = parser.parse_args(argv)
 
@@ -566,6 +600,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except json.JSONDecodeError as exc:
         print("Config file is not valid JSON: {}".format(exc), file=sys.stderr)
         return 1
+
+    if args.print_config:
+        print(json.dumps(config, indent=2, sort_keys=True))
+        return 0
 
     results = run_checks(config, parse_only(args.only))
     if args.json:
